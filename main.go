@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	localAddr := ":8080"
+	localAddr := ":8123"
 	targetAddr := "google.com:80"
 
 	listener, err := net.Listen("tcp", localAddr)
