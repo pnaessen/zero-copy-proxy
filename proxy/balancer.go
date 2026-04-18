@@ -62,3 +62,13 @@ func (rr *RoundRobin) healthCheckLoop() {
 		time.Sleep(5 * time.Second)
 	}
 }
+
+func (rr *RoundRobin) GetStats() (uint64, int) {
+	totalRequests := atomic.LoadUint64(&rr.counter)
+
+	rr.mu.RLock()
+	activeCount := len(rr.activeTargets)
+	rr.mu.RUnlock()
+
+	return totalRequests, activeCount
+}
