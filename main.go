@@ -35,6 +35,12 @@ func main() {
 
 		target := lb.NextTarget()
 
+		if target == "" {
+			log.Printf("No serveur up close client: %s", clientConn.RemoteAddr())
+			clientConn.Close()
+			continue
+		}
+
 		go proxy.HandleConnection(clientConn, target)
 	}
 }
