@@ -12,7 +12,7 @@ func main() {
 	localAddr := ":8123"
 	targetAddr := []string{
 		"httpbin.org:80",
-		"google.come:80",
+		"google.com:80",
 		"truc.com:80",
 	}
 
