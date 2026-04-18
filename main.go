@@ -11,38 +11,44 @@ import (
 
 func main() {
 	localAddr := ":8123"
-	metricsAddr := ":8124"
+	metricsAddr := ":8081"
 
-	targetAddr := []string{
-		"httpbin.org:80",
-		"google.com:80",
-		"truc.com:80",
+	serveursCibles := []string{
+		"localhost:9001",
+		"localhost:9002",
+		"localhost:9003",
 	}
 
-	lb := proxy.NewRoundRobin(targetAddr)
+	lb := proxy.NewRoundRobin(serveursCibles)
 
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		reqCount, activeCount := lb.GetStats()
-		fmt.Fprintf(w, "Load Balancer Zero-Copy\n")
-		fmt.Fprintf(w, "-----------------------\n")
-		fmt.Fprintf(w, "Requêtes traitées : %d\n", reqCount)
-		fmt.Fprintf(w, "Serveurs actifs   : %d / %d\n", activeCount, len(targetAddr))
+
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+
+		fmt.Fprintf(w, "# HELP proxy_requests_total Total number of handled requests\n")
+		fmt.Fprintf(w, "# TYPE proxy_requests_total counter\n")
+		fmt.Fprintf(w, "proxy_requests_total %d\n", reqCount)
+
+		fmt.Fprintf(w, "# HELP proxy_active_servers Number of healthy backend servers\n")
+		fmt.Fprintf(w, "# TYPE proxy_active_servers gauge\n")
+		fmt.Fprintf(w, "proxy_active_servers %d\n", activeCount)
 	})
 
 	go func() {
-		log.Printf(" Serveur on http://localhost%s/metrics\n", metricsAddr)
+		log.Printf("Prometheus metrics available at http://localhost%s/metrics", metricsAddr)
 		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
-			log.Fatalf("Erreur serveur métriques : %v", err)
+			log.Fatalf("Failed to start metrics server: %v", err)
 		}
 	}()
 
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
-		log.Fatalf("Failed to start TCP listener: %v", err)
+		log.Fatalf("Failed to start TCP listener on %s: %v", localAddr, err)
 	}
 	defer listener.Close()
 
-	fmt.Printf("Zero-copy proxy started on %s (forwarding to %s)\n", localAddr, targetAddr)
+	fmt.Printf("TCP proxy started on %s\n", localAddr)
 
 	for {
 		clientConn, err := listener.Accept()
@@ -51,14 +57,13 @@ func main() {
 			continue
 		}
 
-		target := lb.NextTarget()
-
-		if target == "" {
-			log.Printf("No serveur up close client: %s", clientConn.RemoteAddr())
+		cibleActuelle := lb.NextTarget()
+		if cibleActuelle == "" {
+			log.Printf("No backend available, closing client connection")
 			clientConn.Close()
 			continue
 		}
 
-		go proxy.HandleConnection(clientConn, target)
+		go proxy.HandleConnection(clientConn, cibleActuelle)
 	}
 }

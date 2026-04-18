@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web1:
+    image: nginx:alpine
+    ports:
+      - "9001:80"
+  web2:
+    image: nginx:alpine
+    ports:
+      - "9002:80"
+  web3:
+    image: nginx:alpine
+    ports:
+      - "9003:80"
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
