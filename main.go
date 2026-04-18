@@ -10,7 +10,13 @@ import (
 
 func main() {
 	localAddr := ":8123"
-	targetAddr := "google.com:80"
+	targetAddr := []string{
+		"httpbin.org:80",
+		"google.come:80",
+		"truc.com:80",
+	}
+
+	lb := proxy.NewRoundRobin(targetAddr)
 
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
@@ -27,6 +33,8 @@ func main() {
 			continue
 		}
 
-		go proxy.HandleConnection(clientConn, targetAddr)
+		target := lb.NextTarget()
+
+		go proxy.HandleConnection(clientConn, target)
 	}
 }
