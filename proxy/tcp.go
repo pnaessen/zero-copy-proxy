@@ -10,6 +10,8 @@ import (
 func HandleConnection(clientConn net.Conn, targetAddr string) {
 	defer clientConn.Close()
 
+	clientConn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	
 	targetConn, err := net.Dial("tcp", targetAddr)
 	if err != nil {
 		log.Printf("Failed to connect to target %s: %v", targetAddr, err)
